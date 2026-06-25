@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo-Annotationsbäume</title>
+<style>
+:root{--fg:#1e2d45;--muted:#7a7a7a;--line:#e0dbd4;--bg:#ffffff;--card:#f7f5f2;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);
+  font-family:ui-sans-serif,-apple-system,'Segoe UI',sans-serif;color:var(--fg);}
+.shell{display:flex;flex-direction:column;height:100%;padding:14px 18px 10px;gap:10px;}
+.tabs{display:flex;gap:6px;flex-shrink:0;}
+.tab{cursor:pointer;padding:5px 14px;border-radius:20px;font-size:.78rem;
+  border:1.5px solid var(--line);background:var(--bg);color:var(--muted);
+  transition:all .15s;user-select:none;}
+.tab:hover{border-color:#aaa;color:var(--fg);}
+.tab.active{background:var(--fg);color:#fff;border-color:var(--fg);}
+.sentence{font-size:.97rem;line-height:1.6;color:#2a2a2a;flex-shrink:0;
+  padding:8px 12px;background:var(--card);border-radius:6px;
+  border-left:3px solid var(--line);}
+.sentence strong{color:var(--fg);font-weight:600;}
+.tree-wrap{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.tree-wrap svg{max-width:100%;max-height:100%;display:block;}
+.legend{display:flex;flex-wrap:wrap;gap:5px 14px;flex-shrink:0;padding-top:2px;}
+.li{display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--muted);}
+.ls{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#tip{position:fixed;pointer-events:none;display:none;
+  background:#1e2d45;color:#fff;font-size:.72rem;line-height:1.5;
+  padding:6px 9px;border-radius:5px;max-width:260px;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+#tip em{font-style:normal;font-weight:600;}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="shell">
+  <div class="tabs" id="tabs"></div>
+  <div class="sentence" id="sent"></div>
+  <div class="tree-wrap" id="tree"></div>
+  <div class="legend"><span class="li"><span class="ls" style="background:#b03c39"></span>Supplement-Komp.</span><span class="li"><span class="ls" style="background:#c4802a"></span>Suppl. immediate</span><span class="li"><span class="ls" style="background:#5e9490"></span>Suppl. mediated</span><span class="li"><span class="ls" style="background:#b8892a"></span>Body-Komp.</span><span class="li"><span class="ls" style="background:#c9a848"></span>Body immediate</span><span class="li"><span class="ls" style="background:#5b87b8"></span>Body mediated</span></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const DEMOS  = [{"id": 0, "text": "eine Dame", "html": "eine Dame", "trees": [{"name": "Dame", "cat": "Mention", "val": "", "tip": ""}]}, {"id": 1, "text": "eine Dame in elegantem Kleid", "html": "eine Dame in <strong>elegantem</strong> <strong>Kleid</strong>", "trees": [{"name": "Dame", "cat": "Mention", "val": "", "tip": "", "children": [{"name": "Supplement", "cat": "group", "val": "", "tip": "", "children": [{"name": "Kleid", "cat": "supp_component", "val": "dresses", "tip": "<em>Kleid</em> · Supplement · clothing: dresses", "children": [{"name": "elegantem", "cat": "supp/mediated", "val": "aesthetic", "tip": "<em>elegantem</em> · Supplement · mediated attr.: aesthetic · evaluation: positive"}]}]}]}]}, {"id": 2, "text": "eine Dame in braunem Kleid", "html": "eine Dame in <strong>braunem</strong> <strong>Kleid</strong>", "trees": [{"name": "Dame", "cat": "Mention", "val": "", "tip": "", "children": [{"name": "Supplement", "cat": "group", "val": "", "tip": "", "children": [{"name": "Kleid", "cat": "supp_component", "val": "dresses", "tip": "<em>Kleid</em> · Supplement · clothing: dresses", "children": [{"name": "braunem", "cat": "supp/immediate", "val": "colors level 1", "tip": "<em>braunem</em> · Supplement · immediate attr.: colors level 1"}]}]}]}]}, {"id": 3, "text": "eine Dame in braun kariertem Kleid mit gepufften Ärmeln, Spitzenunterärmeln, violettem Parasol, dazu Kapotte, aufgeputzt mit Blumen, Blättern und Federn", "html": "eine Dame in <strong>braun</strong> <strong>kariertem</strong> <strong>Kleid</strong> mit <strong>gepufften</strong> <strong>Ärmeln</strong>, <strong>Spitzenunterärmeln</strong>, <strong>violettem</strong> <strong>Parasol</strong>, dazu <strong>Kapotte</strong>, aufgeputzt mit <strong>Blumen</strong>, <strong>Blättern</strong> und <strong>Federn</strong>", "trees": [{"name": "Dame", "cat": "Mention", "val": "", "tip": "", "children": [{"name": "Supplement", "cat": "group", "val": "", "tip": "", "children": [{"name": "Kleid", "cat": "supp_component", "val": "dresses", "tip": "<em>Kleid</em> · Supplement · clothing: dresses", "children": [{"name": "kariertem", "cat": "supp/immediate", "val": "pattern", "tip": "<em>kariertem</em> · Supplement · immediate attr.: pattern"}, {"name": "braun", "cat": "supp/immediate", "val": "colors level 1", "tip": "<em>braun</em> · Supplement · immediate attr.: colors level 1"}, {"name": "Ärmeln", "cat": "supp_component", "val": "sleeves", "tip": "<em>Ärmeln</em> · Supplement · supplement parts: sleeves"}]}, {"name": "Parasol", "cat": "supp_component", "val": "parasols/umbrellas", "tip": "<em>Parasol</em> · Supplement · accessories: parasols/umbrellas", "children": [{"name": "violettem", "cat": "supp/immediate", "val": "colors level 2", "tip": "<em>violettem</em> · Supplement · immediate attr.: colors level 2"}]}, {"name": "Kapotte", "cat": "supp_component", "val": "hats", "tip": "<em>Kapotte</em> · Supplement · clothing: hats", "children": [{"name": "Blumen", "cat": "supp_component", "val": "flowers", "tip": "<em>Blumen</em> · Supplement · accessories: flowers"}, {"name": "Blättern", "cat": "supp_component", "val": "other accessories worn", "tip": "<em>Blättern</em> · Supplement · accessories: other accessories worn"}, {"name": "Federn", "cat": "supp_component", "val": "other accessories worn", "tip": "<em>Federn</em> · Supplement · accessories: other accessories worn"}]}]}]}]}];
+const COLORS = {"body_component": "#b8892a", "body/immediate": "#c9a848", "body/mediated": "#5b87b8", "supp_component": "#b03c39", "supp/immediate": "#c4802a", "supp/mediated": "#5e9490", "Mention": "#1e2d45", "group": "#b0a89e"};
+let current = 0;
+
+const tabsEl = document.getElementById('tabs');
+DEMOS.forEach((d,i) => {
+  const t = document.createElement('button');
+  t.className = 'tab' + (i===current?' active':'');
+  t.textContent = 'Demo '+i;
+  t.onclick = () => show(i);
+  tabsEl.appendChild(t);
+});
+
+function updateTabs() {
+  tabsEl.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===current));
+}
+
+const sentEl = document.getElementById('sent');
+function updateSent() {
+  const d = DEMOS[current];
+  sentEl.innerHTML = '„' + d.html + '“';
+  sentEl.className = 'sentence';
+}
+
+const treeEl = document.getElementById('tree');
+const tip    = document.getElementById('tip');
+
+function nodeColor(cat) { return COLORS[cat] || '#ccc'; }
+
+function drawTree() {
+  treeEl.innerHTML = '';
+  const trees = DEMOS[current].trees;
+  if (!trees || trees.length === 0) return;
+
+  const NW = 64, NH = 46;
+  const M  = {top:18, right:40, bottom:18, left:40};
+
+  trees.forEach(treeData => {
+    const root   = d3.hierarchy(treeData);
+    const layout = d3.tree().nodeSize([NW, NH]);
+    layout(root);
+
+    let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
+    root.each(d => { x0=Math.min(x0,d.x); x1=Math.max(x1,d.x); y0=Math.min(y0,d.y); y1=Math.max(y1,d.y); });
+
+    const vw = (x1-x0) + M.left + M.right + NW;
+    const vh = (y1-y0) + M.top  + M.bottom + NH + 24;
+
+    const svg = d3.select(treeEl).append('svg')
+      .attr('viewBox', `0 0 ${vw} ${vh}`)
+      .attr('preserveAspectRatio','xMidYMid meet')
+      .style('overflow','visible');
+
+    const g = svg.append('g')
+      .attr('transform', `translate(${M.left - x0 + NW/2},${M.top + 10})`);
+
+    g.selectAll('.lnk').data(root.links()).enter().append('path')
+      .attr('fill','none').attr('stroke','#d5cfc9').attr('stroke-width',1.2)
+      .attr('d', d3.linkVertical().x(d=>d.x).y(d=>d.y));
+
+    const node = g.selectAll('.nd').data(root.descendants()).enter()
+      .append('g').attr('transform', d=>`translate(${d.x},${d.y})`);
+
+    node.append('circle')
+      .attr('r', d => d.data.cat==='Mention'?6 : d.data.cat==='group'?5 : 7)
+      .attr('fill',   d => nodeColor(d.data.cat))
+      .attr('stroke', d => d3.color(nodeColor(d.data.cat)).darker(.5))
+      .attr('stroke-width', 1.2)
+      .style('cursor', d => d.data.tip ? 'help' : 'default')
+      .on('mousemove', function(event, d) {
+        if (!d.data.tip) return;
+        tip.style.display='block';
+        tip.innerHTML=d.data.tip;
+        tip.style.left=(event.clientX+12)+'px';
+        tip.style.top=(event.clientY-8)+'px';
+      })
+      .on('mouseleave', () => { tip.style.display='none'; });
+
+    node.filter(d => d.data.val).append('text')
+      .attr('text-anchor','middle').attr('y',-10)
+      .attr('font-size','6.5px').attr('fill','#9a9490')
+      .text(d => d.data.val.length>20 ? d.data.val.slice(0,18)+'…' : d.data.val);
+
+    node.each(function(d) {
+      const words = d.data.name.split(' ');
+      const maxC = 9;
+      let lines=[], cur='';
+      words.forEach(w => {
+        if ((cur+' '+w).trim().length>maxC && cur) { lines.push(cur.trim()); cur=w; }
+        else { cur=(cur+' '+w).trim(); }
+      });
+      if (cur) lines.push(cur.trim());
+      const txt = d3.select(this).append('text')
+        .attr('text-anchor','middle')
+        .attr('font-size', d.data.cat==='Mention'?'8.5px':'8px')
+        .attr('font-weight', d.data.cat==='Mention'?'600':'400')
+        .attr('fill', d.data.cat==='Mention'?'#1e2d45':'#2b2b2b');
+      lines.forEach((line,i) => txt.append('tspan').attr('x',0).attr('dy',i===0?12:8).text(line));
+    });
+  });
+}
+
+function show(idx) {
+  current=idx; updateTabs(); updateSent(); drawTree();
+}
+
+updateSent(); drawTree();
+</script>
+</body>
+</html>
