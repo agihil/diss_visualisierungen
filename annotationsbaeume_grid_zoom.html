@@ -15,10 +15,11 @@ h1{font-size:.95rem;font-weight:400;color:#333}
 #controls{margin-left:auto;display:flex;gap:8px;align-items:center}
 #zoom-info{font-size:10px;color:#999;font-family:'IBM Plex Mono',monospace;
            min-width:36px;text-align:right}
-#reset-btn{font-size:11px;padding:3px 10px;border:1px solid #bbb;
+#reset-btn,#zoom-in-btn,#zoom-out-btn{
+           font-size:13px;padding:3px 10px;border:1px solid #bbb;
            background:#fff;border-radius:3px;cursor:pointer;
-           font-family:'IBM Plex Sans',sans-serif;color:#444}
-#reset-btn:hover{background:#f5f5f5}
+           font-family:'IBM Plex Sans',sans-serif;color:#444;line-height:1.4}
+#reset-btn:hover,#zoom-in-btn:hover,#zoom-out-btn:hover{background:#f5f5f5}
 
 #legend{flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px 18px;
         padding:7px 14px;background:#fff;
@@ -50,7 +51,9 @@ h1{font-size:.95rem;font-weight:400;color:#333}
 <div id="header">
   <h1>Annotationsbäume – Sample 3 Body (Agnes, v6)</h1>
   <div id="controls">
+    <button id="zoom-out-btn">−</button>
     <span id="zoom-info">100%</span>
+    <button id="zoom-in-btn">+</button>
     <button id="reset-btn">Ansicht zurücksetzen</button>
   </div>
 </div>
@@ -189,6 +192,18 @@ window.addEventListener("mouseup", () => {
   viewport.classList.remove("dragging");
 });
 
+function zoomAround(factor) {
+  const newScale = Math.min(maxScale, Math.max(minScale, scale*factor));
+  const rect = viewport.getBoundingClientRect();
+  const mx = rect.width/2, my = rect.height/2;
+  tx = mx - (mx - tx) * (newScale/scale);
+  ty = my - (my - ty) * (newScale/scale);
+  scale = newScale;
+  applyTransform();
+}
+
+document.getElementById("zoom-in-btn").addEventListener("click",  () => zoomAround(1.25));
+document.getElementById("zoom-out-btn").addEventListener("click", () => zoomAround(1/1.25));
 document.getElementById("reset-btn").addEventListener("click", () => {
   scale=1; tx=0; ty=0; applyTransform();
 });
